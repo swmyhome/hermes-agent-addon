@@ -8,7 +8,7 @@ OPTIONS_FILE="/data/options.json"
 HERMES_HOME="/config"
 
 #
-# Check options
+# Read Home Assistant addon options
 #
 if [ ! -f "$OPTIONS_FILE" ]; then
     echo "[hermes-addon] ERROR: $OPTIONS_FILE not found"
@@ -41,7 +41,7 @@ export HERMES_HOME="$HERMES_HOME"
 echo "[hermes-addon] Hermes home: $HERMES_HOME"
 
 #
-# Make sure persistent directories exist
+# Prepare persistent storage
 #
 echo "[hermes-addon] Preparing persistent directories..."
 
@@ -53,13 +53,14 @@ mkdir -p "$HERMES_HOME/cron"
 mkdir -p "$HERMES_HOME/state"
 
 #
-# Try to fix permissions.
+# Ensure root owns the persistent directory.
 #
-# This is intentionally non-fatal because Home Assistant may
-# manage ownership of the mounted addon directory.
+# The Home Assistant addon_config volume is persistent,
+# so this does NOT delete any Hermes data.
 #
-echo "[hermes-addon] Checking permissions..."
+echo "[hermes-addon] Fixing permissions..."
 
+chown -R root:root "$HERMES_HOME" 2>/dev/null || true
 chmod -R u+rwX "$HERMES_HOME" 2>/dev/null || true
 
 #
@@ -79,27 +80,35 @@ echo "[hermes-addon] Dashboard port: $PORT"
 # Hermes version
 #
 echo "[hermes-addon] Hermes version:"
+
 hermes --version || true
 
 #
-# Existing configuration
+# Show persistent configuration status
 #
 if [ -f "$HERMES_HOME/config.yaml" ]; then
-    echo "[hermes-addon] Existing Hermes configuration found:"
-    echo "[hermes-addon] $HERMES_HOME/config.yaml"
+    echo "[hermes-addon] Existing Hermes configuration found."
 else
     echo "[hermes-addon] No existing config.yaml found."
-    echo "[hermes-addon] Hermes will create its configuration when needed."
 fi
 
-#
-# Existing state database
-#
 if [ -f "$HERMES_HOME/state.db" ]; then
     echo "[hermes-addon] Existing Hermes state database found."
 else
     echo "[hermes-addon] No existing state.db found."
 fi
+
+#
+# Test write access
+#
+echo "[hermes-addon] Testing write access..."
+
+TEST_FILE="$HERMES_HOME/.hermes_write_test"
+
+touch "$TEST_FILE"
+rm -f "$TEST_FILE"
+
+echo "[hermes-addon] Persistent storage is writable."
 
 #
 # Start Dashboard
@@ -123,9 +132,6 @@ fi
 
 echo "[hermes-addon] Dashboard started successfully"
 
-#
-# Dashboard ready marker
-#
 echo "HERMES_DASHBOARD_READY port=$PORT"
 
 #
