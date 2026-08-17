@@ -110,6 +110,19 @@ rm -f "$TEST_FILE"
 
 echo "[hermes-addon] Persistent storage is writable."
 
+echo "[hermes-addon] Runtime user:"
+id
+
+echo "[hermes-addon] /config permissions:"
+ls -ld /config
+ls -ld /config/logs
+
+echo "[hermes-addon] Hermes binary:"
+ls -l "$(which hermes)"
+
+echo "[hermes-addon] Checking Hermes user configuration:"
+getent passwd | grep -E "hermes|nous|app" || true
+
 #
 # Start Dashboard
 #
