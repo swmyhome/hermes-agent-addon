@@ -30,6 +30,15 @@ export HERMES_DASHBOARD_PORT="$PORT"
 export HERMES_DASHBOARD_BASIC_AUTH_USERNAME="$USERNAME"
 export HERMES_DASHBOARD_BASIC_AUTH_PASSWORD="$PASSWORD"
 
+echo "[hermes-addon] Hermes version:"
+hermes --version || true
+
+echo "[hermes-addon] Dashboard configuration:"
+echo "  HERMES_DASHBOARD=$HERMES_DASHBOARD"
+echo "  HERMES_DASHBOARD_HOST=$HERMES_DASHBOARD_HOST"
+echo "  HERMES_DASHBOARD_PORT=$HERMES_DASHBOARD_PORT"
+echo "  HERMES_DASHBOARD_BASIC_AUTH_USERNAME=$HERMES_DASHBOARD_BASIC_AUTH_USERNAME"
+
 echo "[hermes-addon] Starting Hermes Gateway..."
 
 exec hermes gateway run
