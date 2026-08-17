@@ -15,8 +15,13 @@ USERNAME="$(python3 -c "import json; print(json.load(open('$OPTIONS_FILE')).get(
 PASSWORD="$(python3 -c "import json; print(json.load(open('$OPTIONS_FILE')).get('password', ''))")"
 PORT="$(python3 -c "import json; print(json.load(open('$OPTIONS_FILE')).get('port', 9119))")"
 
+if [ -z "$USERNAME" ]; then
+    echo "[hermes-addon] ERROR: Username is empty"
+    exit 1
+fi
+
 if [ -z "$PASSWORD" ]; then
-    echo "[hermes-addon] ERROR: Dashboard password is empty"
+    echo "[hermes-addon] ERROR: Password is empty"
     exit 1
 fi
 
@@ -38,6 +43,9 @@ echo "  HERMES_DASHBOARD=$HERMES_DASHBOARD"
 echo "  HERMES_DASHBOARD_HOST=$HERMES_DASHBOARD_HOST"
 echo "  HERMES_DASHBOARD_PORT=$HERMES_DASHBOARD_PORT"
 echo "  HERMES_DASHBOARD_BASIC_AUTH_USERNAME=$HERMES_DASHBOARD_BASIC_AUTH_USERNAME"
+
+echo "[hermes-addon] Available dashboard commands:"
+hermes --help | grep -i dashboard || true
 
 echo "[hermes-addon] Starting Hermes Gateway..."
 
