@@ -14,7 +14,6 @@ boot: auto
 options:
   username: "admin"
   password: ""
-  port: 9119
 
 schema:
   username: str
