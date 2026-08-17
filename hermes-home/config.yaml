@@ -18,7 +18,6 @@ options:
 schema:
   username: str
   password: password
-  port: port
 
 ports:
   9119/tcp: 9119
