@@ -110,6 +110,8 @@ fi
 #
 echo "[hermes-addon] Starting Hermes Dashboard..."
 
+HOME="$HERMES_HOME" \
+HERMES_HOME="$HERMES_HOME" \
 hermes dashboard \
     --host 0.0.0.0 \
     --port "$PORT" &
@@ -132,4 +134,7 @@ echo "[hermes-addon] Dashboard started successfully"
 #
 echo "[hermes-addon] Starting Hermes Gateway..."
 
-exec hermes gateway run
+exec env \
+    HOME="$HERMES_HOME" \
+    HERMES_HOME="$HERMES_HOME" \
+    hermes gateway run
