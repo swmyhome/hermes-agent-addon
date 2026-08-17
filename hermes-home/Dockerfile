@@ -1,3 +1,4 @@
 FROM nousresearch/hermes-agent:latest
 
-CMD ["tail", "-f", "/dev/null"]
+ENTRYPOINT ["/bin/bash", "-c"]
+CMD ["hermes gateway || hermes server || hermes daemon || tail -f /dev/null"]
