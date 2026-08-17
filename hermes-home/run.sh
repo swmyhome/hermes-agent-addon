@@ -5,11 +5,7 @@ set -e
 echo "[hermes-addon] Starting Hermes Agent..."
 
 OPTIONS_FILE="/data/options.json"
-HERMES_HOME="/config"
 
-#
-# Read Home Assistant addon options
-#
 if [ ! -f "$OPTIONS_FILE" ]; then
     echo "[hermes-addon] ERROR: $OPTIONS_FILE not found"
     exit 1
@@ -29,39 +25,44 @@ if [ -z "$PASSWORD" ]; then
     exit 1
 fi
 
-if [ -z "$PORT" ]; then
-    PORT="9119"
-fi
-
 #
-# Persistent Hermes home
+# Persistent Hermes storage
 #
-export HERMES_HOME="$HERMES_HOME"
+export HERMES_HOME="/data/hermes"
 
 echo "[hermes-addon] Hermes home: $HERMES_HOME"
 
 #
-# Prepare persistent storage
+# Create persistent directories
 #
 echo "[hermes-addon] Preparing persistent directories..."
 
 mkdir -p "$HERMES_HOME"
 mkdir -p "$HERMES_HOME/logs"
-mkdir -p "$HERMES_HOME/sessions"
-mkdir -p "$HERMES_HOME/skills"
-mkdir -p "$HERMES_HOME/cron"
-mkdir -p "$HERMES_HOME/state"
 
 #
-# Ensure root owns the persistent directory.
-#
-# The Home Assistant addon_config volume is persistent,
-# so this does NOT delete any Hermes data.
+# Make sure Hermes owns its persistent data
 #
 echo "[hermes-addon] Fixing permissions..."
 
-chown -R root:root "$HERMES_HOME" 2>/dev/null || true
 chmod -R u+rwX "$HERMES_HOME" 2>/dev/null || true
+
+#
+# Test write access
+#
+echo "[hermes-addon] Testing write access..."
+
+TEST_FILE="$HERMES_HOME/.write_test"
+
+if ! touch "$TEST_FILE" 2>/dev/null; then
+    echo "[hermes-addon] ERROR: Cannot write to $HERMES_HOME"
+    echo "[hermes-addon] Check add-on filesystem permissions."
+    exit 1
+fi
+
+rm -f "$TEST_FILE"
+
+echo "[hermes-addon] Persistent storage is writable."
 
 #
 # Dashboard configuration
@@ -80,48 +81,22 @@ echo "[hermes-addon] Dashboard port: $PORT"
 # Hermes version
 #
 echo "[hermes-addon] Hermes version:"
-
 hermes --version || true
 
 #
-# Show persistent configuration status
+# Existing Hermes configuration
 #
 if [ -f "$HERMES_HOME/config.yaml" ]; then
-    echo "[hermes-addon] Existing Hermes configuration found."
+    echo "[hermes-addon] Existing config.yaml found."
 else
     echo "[hermes-addon] No existing config.yaml found."
 fi
 
 if [ -f "$HERMES_HOME/state.db" ]; then
-    echo "[hermes-addon] Existing Hermes state database found."
+    echo "[hermes-addon] Existing state.db found."
 else
     echo "[hermes-addon] No existing state.db found."
 fi
-
-#
-# Test write access
-#
-echo "[hermes-addon] Testing write access..."
-
-TEST_FILE="$HERMES_HOME/.hermes_write_test"
-
-touch "$TEST_FILE"
-rm -f "$TEST_FILE"
-
-echo "[hermes-addon] Persistent storage is writable."
-
-echo "[hermes-addon] Runtime user:"
-id
-
-echo "[hermes-addon] /config permissions:"
-ls -ld /config
-ls -ld /config/logs
-
-echo "[hermes-addon] Hermes binary:"
-ls -l "$(which hermes)"
-
-echo "[hermes-addon] Checking Hermes user configuration:"
-getent passwd | grep -E "hermes|nous|app" || true
 
 #
 # Start Dashboard
@@ -136,7 +111,7 @@ DASHBOARD_PID=$!
 
 echo "[hermes-addon] Dashboard PID: $DASHBOARD_PID"
 
-sleep 3
+sleep 2
 
 if ! kill -0 "$DASHBOARD_PID" 2>/dev/null; then
     echo "[hermes-addon] ERROR: Hermes Dashboard failed to start"
@@ -144,8 +119,6 @@ if ! kill -0 "$DASHBOARD_PID" 2>/dev/null; then
 fi
 
 echo "[hermes-addon] Dashboard started successfully"
-
-echo "HERMES_DASHBOARD_READY port=$PORT"
 
 #
 # Start Gateway
