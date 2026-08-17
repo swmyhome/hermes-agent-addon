@@ -26,4 +26,4 @@ ports_description:
   9119/tcp: "Hermes Agent Dashboard"
 
 map:
-  - config:rw
+  - addon_config:rw
