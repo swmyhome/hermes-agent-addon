@@ -16,7 +16,7 @@ jobs:
       - name: Fetch latest release tag from GitHub/DockerHub
         id: get_version
         run: |
-          LATEST_TAG=$(curl -s https://api.github.com/repos/nousresearch/hermes-agent/releases/latest | jq -r .tag_name | sed 's/^v//')
+          LATEST_TAG=$(curl -s https://api.github.com/repos/nousresearch/hermes-agent/releases/latest | jq -r .name | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+')
           echo "latest_version=$LATEST_TAG" >> $GITHUB_OUTPUT
 
       - name: Update config.yaml files
@@ -31,5 +31,5 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add hermes-agent/config.yaml hermes-agent-2/config.yaml
+          git add hermes-agent/config.yaml hermes-home/config.yaml
           git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update version to ${{ steps.get_version.outputs.latest_version }}" && git push)
