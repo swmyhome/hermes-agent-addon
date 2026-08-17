@@ -38,14 +38,24 @@ export HERMES_DASHBOARD_BASIC_AUTH_PASSWORD="$PASSWORD"
 echo "[hermes-addon] Hermes version:"
 hermes --version || true
 
-echo "[hermes-addon] Dashboard configuration:"
-echo "  HERMES_DASHBOARD=$HERMES_DASHBOARD"
-echo "  HERMES_DASHBOARD_HOST=$HERMES_DASHBOARD_HOST"
-echo "  HERMES_DASHBOARD_PORT=$HERMES_DASHBOARD_PORT"
-echo "  HERMES_DASHBOARD_BASIC_AUTH_USERNAME=$HERMES_DASHBOARD_BASIC_AUTH_USERNAME"
+echo "[hermes-addon] Starting Hermes Dashboard..."
 
-echo "[hermes-addon] Available dashboard commands:"
-hermes --help | grep -i dashboard || true
+hermes dashboard \
+    --host 0.0.0.0 \
+    --port "$PORT" &
+
+DASHBOARD_PID=$!
+
+echo "[hermes-addon] Dashboard PID: $DASHBOARD_PID"
+
+sleep 2
+
+if ! kill -0 "$DASHBOARD_PID" 2>/dev/null; then
+    echo "[hermes-addon] ERROR: Hermes Dashboard failed to start"
+    exit 1
+fi
+
+echo "[hermes-addon] Dashboard started successfully"
 
 echo "[hermes-addon] Starting Hermes Gateway..."
 
