@@ -1,28 +1,31 @@
 name: "Hermes Agent"
 slug: "hermes_agent"
 version: "0.20.3"
-description: "Pierwsza instancja Hermes Agent AI"
+description: "Hermes Agent AI Dashboard"
 url: "https://github.com/swmyhome/hermes-agent-addon"
+
 arch:
   - amd64
   - aarch64
+
 startup: services
 boot: auto
+
 options:
-  HERMES_DASHBOARD: "true"
   username: "admin"
-  password: "zmien-to-haslo-123"
+  password: ""
+  port: 9119
+
 schema:
-  HERMES_DASHBOARD: str
   username: str
   password: password
-schema_descriptions:
-  HERMES_DASHBOARD: "Włącz panel dashboard Hermesa (true/false)"
-  username: "Nazwa użytkownika do panelu Hermesa"
-  password: "Hasło do panelu Hermesa"
+  port: port
+
 ports:
-  9119/tcp: 9120
+  9119/tcp: 9119
+
 ports_description:
-  9119/tcp: "Port interfejsu Web UI Hermesa"
+  9119/tcp: "Hermes Agent Dashboard"
+
 map:
   - config:rw
