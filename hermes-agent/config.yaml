@@ -1,6 +1,6 @@
 name: "Hermes Agent"
 slug: "hermes_agent"
-version: "0.20.2"
+version: "0.20.3"
 description: "Pierwsza instancja Hermes Agent AI"
 url: "https://github.com/swmyhome/hermes-agent-addon"
 arch:
