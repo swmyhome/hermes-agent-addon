@@ -25,9 +25,16 @@ if [ -z "$PASSWORD" ]; then
     exit 1
 fi
 
-echo "[hermes-addon] Dashboard username: $USERNAME"
-echo "[hermes-addon] Dashboard port: $PORT"
+#
+# Persistent Hermes configuration
+#
+export HERMES_HOME="/config"
 
+echo "[hermes-addon] Hermes home: $HERMES_HOME"
+
+#
+# Dashboard configuration
+#
 export HERMES_DASHBOARD="1"
 export HERMES_DASHBOARD_HOST="0.0.0.0"
 export HERMES_DASHBOARD_PORT="$PORT"
@@ -35,9 +42,18 @@ export HERMES_DASHBOARD_PORT="$PORT"
 export HERMES_DASHBOARD_BASIC_AUTH_USERNAME="$USERNAME"
 export HERMES_DASHBOARD_BASIC_AUTH_PASSWORD="$PASSWORD"
 
+echo "[hermes-addon] Dashboard username: $USERNAME"
+echo "[hermes-addon] Dashboard port: $PORT"
+
+#
+# Hermes version
+#
 echo "[hermes-addon] Hermes version:"
 hermes --version || true
 
+#
+# Start Dashboard
+#
 echo "[hermes-addon] Starting Hermes Dashboard..."
 
 hermes dashboard \
@@ -57,6 +73,9 @@ fi
 
 echo "[hermes-addon] Dashboard started successfully"
 
+#
+# Start Gateway
+#
 echo "[hermes-addon] Starting Hermes Gateway..."
 
 exec hermes gateway run
