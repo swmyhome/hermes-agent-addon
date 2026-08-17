@@ -45,7 +45,14 @@ mkdir -p "$HERMES_HOME/logs"
 #
 echo "[hermes-addon] Fixing permissions..."
 
-chmod -R u+rwX "$HERMES_HOME" 2>/dev/null || true
+mkdir -p "$HERMES_HOME"
+mkdir -p "$HERMES_HOME/logs"
+
+chmod -R 777 "$HERMES_HOME"
+
+echo "[hermes-addon] Storage permissions:"
+ls -ld "$HERMES_HOME"
+ls -ld "$HERMES_HOME/logs"
 
 #
 # Test write access
