@@ -1,7 +1,7 @@
 {
-  "name": "Hermes Agent",
+  "name": "Hermes test",
   "version": "1.0.0",
-  "slug": "hermes_agent",
+  "slug": "hermes_test",
   "description": "NousResearch Hermes Agent z włączonym Dashboardem",
   "arch": ["amd64", "aarch64", "armv7"],
   "url": "https://github.com/NousResearch/hermes-agent",
