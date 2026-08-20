@@ -25,6 +25,18 @@ if [ -z "$PASSWORD" ]; then
     exit 1
 fi
 
+#
+# Persistent Hermes storage
+#
+export HERMES_HOME="/opt/data"
+
+echo "[hermes-addon] Hermes home: $HERMES_HOME"
+
+#
+# Create persistent directories
+#
+echo "[hermes-addon] Preparing persistent directories..."
+
 mkdir -p "$HERMES_HOME"
 mkdir -p "$HERMES_HOME/logs"
 
