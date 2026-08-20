@@ -1,5 +1,4 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 set -e
 
 echo "[hermes-addon] Starting Hermes Agent..."
@@ -11,130 +10,87 @@ if [ ! -f "$OPTIONS_FILE" ]; then
     exit 1
 fi
 
+# Odczytanie danych z UI
 USERNAME="$(python3 -c "import json; print(json.load(open('$OPTIONS_FILE')).get('username', 'admin'))")"
 PASSWORD="$(python3 -c "import json; print(json.load(open('$OPTIONS_FILE')).get('password', ''))")"
-PORT="$(python3 -c "import json; print(json.load(open('$OPTIONS_FILE')).get('port', 9119))")"
 
-if [ -z "$USERNAME" ]; then
-    echo "[hermes-addon] ERROR: Username is empty"
-    exit 1
-fi
-
-if [ -z "$PASSWORD" ]; then
-    echo "[hermes-addon] ERROR: Password is empty"
+if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
+    echo "[hermes-addon] ERROR: Username or Password is empty"
     exit 1
 fi
 
 #
-# Persistent Hermes storage
+# 1. Trwały katalog danych (Zostawiamy tylko /data)
 #
-export HERMES_HOME="/opt/data"
-
-echo "[hermes-addon] Hermes home: $HERMES_HOME"
-
-#
-# Create persistent directories
-#
-echo "[hermes-addon] Preparing persistent directories..."
-
-mkdir -p "$HERMES_HOME"
-mkdir -p "$HERMES_HOME/logs"
+export HERMES_DATA="/opt/data"
+echo "[hermes-addon] Persistent data directory: $HERMES_DATA"
 
 #
-# Make sure Hermes owns its persistent data
+# 2. Przygotowanie katalogu i uprawnień
 #
-echo "[hermes-addon] Fixing permissions..."
+echo "[hermes-addon] Preparing persistent storage..."
+mkdir -p "$HERMES_DATA/logs"
+chmod -R 777 "$HERMES_DATA"
 
-mkdir -p "$HERMES_HOME"
-mkdir -p "$HERMES_HOME/logs"
-
-chmod -R 777 "$HERMES_HOME"
-
-echo "[hermes-addon] Storage permissions:"
-ls -ld "$HERMES_HOME"
-ls -ld "$HERMES_HOME/logs"
-
-#
-# Test write access
-#
-echo "[hermes-addon] Testing write access..."
-
-TEST_FILE="$HERMES_HOME/.write_test"
-
-if ! touch "$TEST_FILE" 2>/dev/null; then
-    echo "[hermes-addon] ERROR: Cannot write to $HERMES_HOME"
-    echo "[hermes-addon] Check add-on filesystem permissions."
+# Test zapisu
+if ! touch "$HERMES_DATA/.write_test" 2>/dev/null; then
+    echo "[hermes-addon] ERROR: Cannot write to $HERMES_DATA"
     exit 1
 fi
-
-rm -f "$TEST_FILE"
-
+rm -f "$HERMES_DATA/.write_test"
 echo "[hermes-addon] Persistent storage is writable."
 
 #
-# Dashboard configuration
+# 3. Konfiguracja Dashboardu
 #
 export HERMES_DASHBOARD="1"
 export HERMES_DASHBOARD_HOST="0.0.0.0"
-export HERMES_DASHBOARD_PORT="$PORT"
+export HERMES_DASHBOARD_PORT="9119" # Wewnętrzny port musi być 9119
 
 export HERMES_DASHBOARD_BASIC_AUTH_USERNAME="$USERNAME"
 export HERMES_DASHBOARD_BASIC_AUTH_PASSWORD="$PASSWORD"
 
-echo "[hermes-addon] Dashboard username: $USERNAME"
-echo "[hermes-addon] Dashboard port: $PORT"
+echo "[hermes-addon] Dashboard configured for user: $USERNAME on port 9119"
 
 #
-# Hermes version
+# 4. Weryfikacja (Sprawdzamy teraz bezpośrednio w /data)
 #
 echo "[hermes-addon] Hermes version:"
 hermes --version || true
 
-#
-# Existing Hermes configuration
-#
-if [ -f "$HERMES_HOME/config.yaml" ]; then
-    echo "[hermes-addon] Existing config.yaml found."
+if [ -f "$HERMES_DATA/config.yaml" ]; then
+    echo "[hermes-addon] Existing config.yaml found in /data."
 else
-    echo "[hermes-addon] No existing config.yaml found."
-fi
-
-if [ -f "$HERMES_HOME/state.db" ]; then
-    echo "[hermes-addon] Existing state.db found."
-else
-    echo "[hermes-addon] No existing state.db found."
+    echo "[hermes-addon] No config.yaml found. App will generate defaults."
 fi
 
 #
-# Start Dashboard
+# 5. Start Dashboard (w tle)
 #
 echo "[hermes-addon] Starting Hermes Dashboard..."
 
-HOME="$HERMES_HOME" \
-HERMES_HOME="$HERMES_HOME" \
+# Przekazujemy tylko HERMES_DATA. Nie nadpisujemy systemowego HOME!
+HERMES_DATA="$HERMES_DATA" \
 hermes dashboard \
     --host 0.0.0.0 \
-    --port "$PORT" &
+    --port 9119 &
 
 DASHBOARD_PID=$!
-
 echo "[hermes-addon] Dashboard PID: $DASHBOARD_PID"
 
-sleep 2
+sleep 3
 
 if ! kill -0 "$DASHBOARD_PID" 2>/dev/null; then
     echo "[hermes-addon] ERROR: Hermes Dashboard failed to start"
     exit 1
 fi
-
 echo "[hermes-addon] Dashboard started successfully"
 
 #
-# Start Gateway
+# 6. Start Gateway (na pierwszym planie)
 #
 echo "[hermes-addon] Starting Hermes Gateway..."
 
 exec env \
-    HOME="$HERMES_HOME" \
-    HERMES_HOME="$HERMES_HOME" \
+    HERMES_DATA="$HERMES_DATA" \
     hermes gateway run
