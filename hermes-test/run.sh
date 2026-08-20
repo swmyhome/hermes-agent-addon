@@ -22,55 +22,58 @@ if [ -z "$USERNAME" ] || [ -z "$PASSWORD" ]; then
 fi
 
 #
-# 2. PLAN B: Tworzenie Symlinku (Trwałość danych)
-# Aplikacja oczekuje katalogu /opt/data. 
-# My przekierujemy go do trwałego /data z Home Assistanta.
+# 2. Inteligentna obsługa trwałości danych
 #
 APP_EXPECTED_DIR="/opt/data"
 HA_PERSISTENT_DIR="/data"
 
-echo "[hermes-addon] Setting up persistent storage via symlink..."
+echo "[hermes-addon] Setting up persistent storage..."
 
-# Jeśli /opt/data istnieje jako zwykły folder (z obrazu Docker), usuwamy go
-if [ -d "$APP_EXPECTED_DIR" ] && [ ! -L "$APP_EXPECTED_DIR" ]; then
-    echo "[hermes-addon] Removing default $APP_EXPECTED_DIR directory from image..."
+# Sprawdź, czy /opt/data jest już zamontowane jako wolumen (stąd błąd "Device or resource busy")
+if mountpoint -q "$APP_EXPECTED_DIR"; then
+    echo "[hermes-addon] $APP_EXPECTED_DIR is a mounted volume."
+    echo "[hermes-addon] Attempting to overlay with persistent /data (mount --bind)..."
+    
+    # Próbujemy nałożyć /data na /opt/data
+    if mount --bind "$HA_PERSISTENT_DIR" "$APP_EXPECTED_DIR"; then
+        echo "[hermes-addon] Success! /data is now bound to $APP_EXPECTED_DIR."
+    else
+        echo "[hermes-addon] WARNING: mount --bind failed (missing privileges?)."
+        echo "[hermes-addon] Falling back to default volume. Data will persist across restarts."
+    fi
+else
+    # Jeśli to zwykły folder (nie jest zamontowany), usuwamy go i tworzymy symlink
+    echo "[hermes-addon] $APP_EXPECTED_DIR is a regular directory. Creating symlink..."
     rm -rf "$APP_EXPECTED_DIR"
-fi
-
-# Tworzymy symlink: /opt/data wskazuje teraz na /data
-if [ ! -L "$APP_EXPECTED_DIR" ]; then
-    echo "[hermes-addon] Creating symlink: $APP_EXPECTED_DIR -> $HA_PERSISTENT_DIR"
     ln -s "$HA_PERSISTENT_DIR" "$APP_EXPECTED_DIR"
+    echo "[hermes-addon] Symlink created."
 fi
 
-# Nadajemy pełne uprawnienia, aby aplikacja w kontenerze mogła tu pisać
+# Nadaj uprawnienia
 chmod -R 777 "$HA_PERSISTENT_DIR"
 
-# Test zapisu (dla pewności)
+# Test zapisu
 if ! touch "$APP_EXPECTED_DIR/.write_test" 2>/dev/null; then
-    echo "[hermes-addon] ERROR: Cannot write to $APP_EXPECTED_DIR (symlink failed?)"
+    echo "[hermes-addon] ERROR: Cannot write to $APP_EXPECTED_DIR"
     exit 1
 fi
 rm -f "$APP_EXPECTED_DIR/.write_test"
-echo "[hermes-addon] Persistent storage is writable and linked correctly."
+echo "[hermes-addon] Persistent storage is writable."
 
 #
 # 3. Konfiguracja Dashboardu
 #
 export HERMES_DASHBOARD="1"
 export HERMES_DASHBOARD_HOST="0.0.0.0"
-# WAŻNE: Port wewnętrzny w kontenerze MUSI być 9119 (zgodnie z config.json)
-export HERMES_DASHBOARD_PORT="9119" 
+export HERMES_DASHBOARD_PORT="9119" # Wewnętrzny port musi być 9119
 
 export HERMES_DASHBOARD_BASIC_AUTH_USERNAME="$USERNAME"
 export HERMES_DASHBOARD_BASIC_AUTH_PASSWORD="$PASSWORD"
 
-# Ustawiamy zmienne środowiskowe na ścieżkę z symlinkiem (dla pewności)
 export HERMES_HOME="$APP_EXPECTED_DIR"
 export HERMES_DATA="$APP_EXPECTED_DIR"
 
 echo "[hermes-addon] Dashboard configured for user: $USERNAME on internal port 9119"
-echo "[hermes-addon] HERMES_HOME and HERMES_DATA set to: $APP_EXPECTED_DIR"
 
 #
 # 4. Weryfikacja
@@ -83,8 +86,6 @@ hermes --version || true
 #
 echo "[hermes-addon] Starting Hermes Dashboard..."
 
-# Uruchamiamy Dashboard w tle (&)
-# NIE nadpisujemy systemowej zmiennej HOME, tylko HERMES_HOME/DATA
 HERMES_HOME="$APP_EXPECTED_DIR" \
 HERMES_DATA="$APP_EXPECTED_DIR" \
 hermes dashboard \
@@ -94,7 +95,7 @@ hermes dashboard \
 DASHBOARD_PID=$!
 echo "[hermes-addon] Dashboard PID: $DASHBOARD_PID"
 
-sleep 3 # Dajemy chwilę na start
+sleep 3
 
 if ! kill -0 "$DASHBOARD_PID" 2>/dev/null; then
     echo "[hermes-addon] ERROR: Hermes Dashboard failed to start"
@@ -103,7 +104,7 @@ fi
 echo "[hermes-addon] Dashboard started successfully"
 
 #
-# 6. Start Gateway (na pierwszym planie - to utrzyma kontener przy życiu)
+# 6. Start Gateway (na pierwszym planie)
 #
 echo "[hermes-addon] Starting Hermes Gateway..."
 
