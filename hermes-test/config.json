@@ -1,18 +1,26 @@
-{
-  "name": "Hermes test",
-  "version": "1.0.0",
-  "slug": "hermes_test",
-  "description": "NousResearch Hermes Agent z włączonym Dashboardem",
-  "arch": ["amd64", "aarch64", "armv7"],
-  "url": "https://github.com/NousResearch/hermes-agent",
-  "startup": "application",
-  "boot": "auto",
-  "ports": {
-    "9119/tcp": 9125
-  },
-  "ports_description": {
-    "9119/tcp": "Hermes Dashboard (Host: 9125)"
-  },
-  "options": {},
-  "schema": {}
-}
+name: "Hermes test"
+slug: "hermes_test"
+version: "0.20.4"
+description: "Hermes Agent AI Dashboard"
+url: "https://github.com/swmyhome/hermes-agent-addon"
+
+arch:
+  - amd64
+  - aarch64
+
+startup: services
+boot: auto
+
+options:
+  username: "admin"
+  password: ""
+
+schema:
+  username: str
+  password: password
+
+ports:
+  9119/tcp: 9119
+
+ports_description:
+  9119/tcp: "Hermes Agent Dashboard"
