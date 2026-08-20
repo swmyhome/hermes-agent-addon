@@ -22,7 +22,7 @@ fi
 #
 # 1. Trwały katalog danych (Zostawiamy tylko /data)
 #
-export HERMES_DATA="/opt/data"
+export HERMES_DATA="/data"
 echo "[hermes-addon] Persistent data directory: $HERMES_DATA"
 
 #
