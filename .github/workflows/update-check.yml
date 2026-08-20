@@ -2,8 +2,8 @@ name: Check Hermes Updates
 
 on:
   schedule:
-    # Uruchamia sprawdzanie co godzinę o 00
-    - cron: '0 * * * *'
+    # Uruchamia sprawdzanie co 2 godziny o 00
+    - cron: '0 */2 * * *'
   workflow_dispatch: # Pozwala też na ręczne kliknięcie "Run workflow" w dowolnym momencie
 
 jobs:
