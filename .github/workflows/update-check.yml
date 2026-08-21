@@ -2,9 +2,11 @@ name: Check Hermes Updates
 
 on:
   schedule:
-    # Uruchamia sprawdzanie co 2 godziny o 00
-    - cron: '0 */2 * * *'
-  workflow_dispatch: # Pozwala też na ręczne kliknięcie "Run workflow" w dowolnym momencie
+    - cron: '0 */2 * * *' # Co 2 godziny o pełnej godzinie
+  workflow_dispatch: # Ręczne uruchomienie
+
+permissions:
+  contents: write # Kluczowe: uprawnienia do git push
 
 jobs:
   update-version:
@@ -12,24 +14,54 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Fetch latest release tag from GitHub/DockerHub
+      - name: Fetch latest release version from GitHub
         id: get_version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LATEST_TAG=$(curl -s https://api.github.com/repos/nousresearch/hermes-agent/releases/latest | jq -r .name | grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+')
-          echo "latest_version=$LATEST_TAG" >> $GITHUB_OUTPUT
+          LATEST_TAG=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
+            https://api.github.com/repos/nousresearch/hermes-agent/releases/latest | \
+            jq -r '.name' | \
+            grep -oP 'v\K[0-9]+\.[0-9]+\.[0-9]+' | \
+            head -n 1)
+          
+          if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" == "null" ]; then
+            echo "Nie udało się pobrać wersji. Sprawdzanie zakończone."
+            exit 1
+          fi
+          
+          echo "latest_version=$LATEST_TAG" >> "$GITHUB_OUTPUT"
+          echo "Znaleziono wersję: $LATEST_TAG"
 
       - name: Update config.yaml files
         run: |
           NEW_VER="${{ steps.get_version.outputs.latest_version }}"
-          if [ -n "$NEW_VER" ] && [ "$NEW_VER" != "null" ]; then
-            sed -i "s/version: \".*\"/version: \"$NEW_VER\"/g" hermes-agent/config.yaml
-            sed -i "s/version: \".*\"/version: \"$NEW_VER\"/g" hermes-home/config.yaml
-          fi
+          
+          for FILE in "hermes-agent/config.yaml" "hermes-home/config.yaml"; do
+            if [ -f "$FILE" ]; then
+              # Elastyczny regex: dopasowuje version: 0.20.4, version: "0.20.4" lub version: '0.20.4'
+              # ^ chroni przed nadpisaniem komentarzy. Zawsze zapisuje z podwójnym cudzysłowem.
+              sed -i -E "s/^(version:[[:space:]]*)[\"']?[0-9]+\.[0-9]+\.[0-9]+[\"']?/\1\"$NEW_VER\"/" "$FILE"
+              echo "✅ Zaktualizowano wersję w $FILE na $NEW_VER"
+            else
+              echo "⚠️ Ostrzeżenie: Plik $FILE nie istnieje, pomijam."
+            fi
+          done
 
       - name: Commit and push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add hermes-agent/config.yaml hermes-home/config.yaml
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update version to ${{ steps.get_version.outputs.latest_version }}" && git push)
+          
+          git add hermes-agent/config.yaml hermes-home/config.yaml 2>/dev/null || true
+          
+          if git diff --staged --quiet; then
+            echo "Brak zmian do zatwierdzenia. Wersje są aktualne."
+          else
+            git commit -m "chore: auto-update version to ${{ steps.get_version.outputs.latest_version }}"
+            git push
+            echo "🚀 Pomyślnie wypchnięto zmiany do repozytorium."
+          fi
