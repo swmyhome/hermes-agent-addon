@@ -30,6 +30,10 @@ fi
 #
 export HERMES_HOME="/data/hermes"
 
+# Ensure hermes user has write access to /share/hermes
+mkdir -p /share/hermes
+chown -R hermes:hermes /share/hermes 2>/dev/null || true
+
 echo "[hermes-addon] Hermes home: $HERMES_HOME"
 
 #
