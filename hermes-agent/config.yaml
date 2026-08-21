@@ -1,6 +1,6 @@
 name: "Hermes Agent"
 slug: "hermes_agent"
-version: "0.20.5"
+version: "0.20.5A"
 description: "Hermes Agent AI Dashboard"
 url: "https://github.com/swmyhome/hermes-agent-addon"
 
@@ -24,3 +24,6 @@ ports:
 
 ports_description:
   9119/tcp: "Hermes Agent Dashboard"
+
+map:
+  - share:rw
