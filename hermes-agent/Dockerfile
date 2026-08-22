@@ -8,7 +8,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Opcjonalnie: daj userowi hermes uprawnienia do apt
-RUN echo "hermes ALL=(ALL) NOPASSWD: /usr/bin/apt-get" >> /etc/sudoers
+RUN echo "hermes ALL=(ALL) NOPASSWD: /usr/bin/apt-get" >> /etc/sudoers.d/hermes
 
 COPY run.sh /run.sh
 
