@@ -19,6 +19,9 @@ schema:
   username: str
   password: password
 
+devices:                                                                                                                               
+  - device 
+
 ports:
   9119/tcp: 9119
 
