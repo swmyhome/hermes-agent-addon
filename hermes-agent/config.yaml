@@ -14,13 +14,13 @@ boot: auto
 options:
   username: "admin"
   password: ""
+  devices: []
 
 schema:
   username: str
   password: password
-
-devices:                                                                                                                               
-  - device 
+  devices:
+    - device
 
 ports:
   9119/tcp: 9119
