@@ -1,0 +1,29 @@
+name: "Hermes Test"
+slug: "hermes_test"
+version: "0.20.5"
+description: "Hermes Agent AI Dashboard"
+url: "https://github.com/swmyhome/hermes-agent-addon"
+
+arch:
+  - amd64
+  - aarch64
+
+startup: services
+boot: auto
+
+options:
+  username: "admin"
+  password: ""
+
+schema:
+  username: str
+  password: password
+
+ports:
+  9119/tcp: 9119
+
+ports_description:
+  9119/tcp: "Hermes Agent Dashboard"
+
+map:
+  - share:rw
